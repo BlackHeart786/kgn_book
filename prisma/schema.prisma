@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model financial_transactions {
+  transaction_id   Int       @id @default(autoincrement())
+  project_id       Int?
+  transaction_date DateTime? @db.Date
+  amount           Decimal?  @db.Decimal(15, 2)
+  transaction_type String?   @db.VarChar(20)
+  category         String?   @db.VarChar(50)
+  description      String?
+  reference_number String?   @db.VarChar(50)
+  approved_by      Int?
+  approved_at      DateTime? @db.Timestamp(6)
+  created_by       Int?
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model permissions {
+  permission_id    Int                @id @default(autoincrement())
+  permission_name  String?            @db.VarChar(100)
+  description      String?
+  role_permissions role_permissions[]
+}
+
+model projects {
+  project_id   Int       @id @default(autoincrement())
+  project_name String?   @db.VarChar(100)
+  description  String?
+  start_date   DateTime? @db.Date
+  end_date     DateTime? @db.Date
+  budget       Decimal?  @db.Decimal(15, 2)
+  status       String?   @db.VarChar(20)
+  created_by   Int?
+  created_at   DateTime  @default(now()) @db.Timestamp(6)
+  updated_at   DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model role_permissions {
+  role_permission_id Int         @id @default(autoincrement())
+  role_id            Int
+  permission_id      Int
+  permissions        permissions @relation(fields: [permission_id], references: [permission_id], onDelete: Cascade, onUpdate: NoAction)
+  roles              roles       @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model roles {
+  role_id          Int                @id @default(autoincrement())
+  role_name        String             @db.VarChar(50)
+  description      String?
+  role_permissions role_permissions[]
+  user_roles       user_roles[]
+}
+
+model user_roles {
+  user_role_id                    Int      @id @default(autoincrement())
+  user_id                         Int
+  role_id                         Int
+  assigned_at                     DateTime @default(now()) @db.Timestamp(6)
+  assigned_by                     Int?     @default(4)
+  roles                           roles    @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_roles_user_idTousers users    @relation("user_roles_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model users {
+  user_id                              Int          @id @default(autoincrement())
+  username                             String       @unique @db.VarChar(50)
+  password_hash                        String       @db.VarChar(255)
+  email                                String       @unique @db.VarChar(100)
+  full_name                            String       @db.VarChar(100)
+  is_active                            Boolean?     @default(false)
+  is_ceo                               Boolean?     @default(false)
+  last_login                           DateTime?    @db.Timestamp(6)
+  created_at                           DateTime     @default(now()) @db.Timestamp(6)
+  updated_at                           DateTime     @default(now()) @db.Timestamp(6)
+  user_roles_user_roles_user_idTousers user_roles[] @relation("user_roles_user_idTousers")
+}
+
+model vendor_payments {
+  payment_id       Int       @id @default(autoincrement())
+  payment_date     DateTime? @db.Date
+  amount           Decimal?  @db.Decimal(15, 2)
+  payment_method   String?   @db.VarChar(50)
+  reference_number String?   @db.VarChar(50)
+  description      String?
+  status           String?   @db.VarChar(20)
+  created_by       Int?
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model vendors {
+  vendor_id           Int      @id @default(autoincrement())
+  vendor_name         String?  @db.VarChar(100)
+  gst_no              String?  @db.VarChar(50)
+  vendor_type         String?  @db.VarChar(50)
+  email               String?  @db.VarChar(100)
+  phone               BigInt?
+  address             String?
+  bank_name           String?  @db.VarChar(100)
+  bank_account_number String?  @db.VarChar(50)
+  ifsc_code           String?  @db.VarChar(50)
+  is_active           Boolean? @default(true)
+  created_by          Int?
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @default(now()) @db.Timestamp(6)
+  payables            Decimal? @db.Decimal(15, 2)
+}
