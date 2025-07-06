@@ -16,7 +16,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [formSubmitting, setFormSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false); // 👈 new state
+  const [showSuccess, setShowSuccess] = useState(false); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,8 +55,7 @@ const LoginPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1F2023] to-black p-4">
         <div className="bg-[#2D2E30] text-white p-8 rounded-lg w-full max-w-md shadow-2xl border border-gray-700">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold">Welcome to KGN Book</h1>
-            <p className="text-gray-400 mt-1 text-sm">Sign in to access your dashboard</p>
+            <h1 className="text-3xl font-bold">Welcome To KGN Book</h1>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

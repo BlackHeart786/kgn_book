@@ -9,19 +9,20 @@ datasource db {
 }
 
 model financial_transactions {
-  transaction_id   Int       @id @default(autoincrement())
-  project_id       Int?
-  transaction_date DateTime? @db.Date
-  amount           Decimal?  @db.Decimal(15, 2)
-  transaction_type String?   @db.VarChar(20)
-  category         String?   @db.VarChar(50)
-  description      String?
-  reference_number String?   @db.VarChar(50)
-  approved_by      Int?
-  approved_at      DateTime? @db.Timestamp(6)
-  created_by       Int?
-  created_at       DateTime  @default(now()) @db.Timestamp(6)
-  updated_at       DateTime  @default(now()) @db.Timestamp(6)
+  transaction_id     Int       @id @default(autoincrement())
+  project_id         Int?
+  transaction_date   DateTime? @db.Date
+  amount             Decimal?  @db.Decimal(15, 2)
+  transaction_method String?   @db.VarChar(20)
+  category           String?   @db.VarChar(50)
+  description        String?
+  reference_number   String?   @db.VarChar(50)
+  created_by         Int?
+  created_at         DateTime  @default(now()) @db.Timestamp(6)
+  updated_at         DateTime  @default(now()) @db.Timestamp(6)
+  vendor_id          Int?
+  type               String    @default("spend") @db.VarChar(20)
+  vendor             vendors?  @relation(fields: [vendor_id], references: [vendor_id])
 }
 
 model permissions {
@@ -84,33 +85,21 @@ model users {
   user_roles_user_roles_user_idTousers user_roles[] @relation("user_roles_user_idTousers")
 }
 
-model vendor_payments {
-  payment_id       Int       @id @default(autoincrement())
-  payment_date     DateTime? @db.Date
-  amount           Decimal?  @db.Decimal(15, 2)
-  payment_method   String?   @db.VarChar(50)
-  reference_number String?   @db.VarChar(50)
-  description      String?
-  status           String?   @db.VarChar(20)
-  created_by       Int?
-  created_at       DateTime  @default(now()) @db.Timestamp(6)
-  updated_at       DateTime  @default(now()) @db.Timestamp(6)
-}
-
 model vendors {
-  vendor_id           Int      @id @default(autoincrement())
-  vendor_name         String?  @db.VarChar(100)
-  gst_no              String?  @db.VarChar(50)
-  vendor_type         String?  @db.VarChar(50)
-  email               String?  @db.VarChar(100)
-  phone               BigInt?
-  address             String?
-  bank_name           String?  @db.VarChar(100)
-  bank_account_number String?  @db.VarChar(50)
-  ifsc_code           String?  @db.VarChar(50)
-  is_active           Boolean? @default(true)
-  created_by          Int?
-  created_at          DateTime @default(now()) @db.Timestamp(6)
-  updated_at          DateTime @default(now()) @db.Timestamp(6)
-  payables            Decimal? @db.Decimal(15, 2)
+  vendor_id              Int                      @id @default(autoincrement())
+  vendor_name            String?                  @db.VarChar(100)
+  gst_no                 String?                  @db.VarChar(50)
+  vendor_type            String?                  @db.VarChar(50)
+  email                  String?                  @db.VarChar(100)
+  phone                  BigInt?
+  address                String?
+  bank_name              String?                  @db.VarChar(100)
+  bank_account_number    String?                  @db.VarChar(50)
+  ifsc_code              String?                  @db.VarChar(50)
+  is_active              Boolean?                 @default(true)
+  created_by             Int?
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamp(6)
+  payables               Decimal?                 @db.Decimal(15, 2)
+  financial_transactions financial_transactions[]
 }

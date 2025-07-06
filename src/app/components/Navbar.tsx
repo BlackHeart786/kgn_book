@@ -11,8 +11,9 @@ import {
   MdMenu,
   MdClose,
 } from "react-icons/md";
+import { ImSpinner2 } from "react-icons/im";
 import { IconType } from "react-icons";
-import SuccessScreen from "../SuccessScreen"; // Assuming correct path to SuccessScreen
+import SuccessScreen from "../SuccessScreen"; // Ensure this is the correct path
 
 interface NavLink {
   name: string;
@@ -30,7 +31,7 @@ const navLinks: NavLink[] = [
 
 const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const isLoggedIn = !!session?.user?.id;
   const isCEO = session?.user?.is_ceo;
 
@@ -52,16 +53,12 @@ const Navbar: React.FC = () => {
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const handleLogout = async () => {
-    setIsDropdownOpen(false); // Close dropdown immediately
-    setShowLogoutSuccess(true); // Show success message
+    setIsDropdownOpen(false);
+    setShowLogoutSuccess(true);
 
-    // The SuccessScreen's duration prop will handle hiding it.
-    // The signOut will occur after the duration of the SuccessScreen.
-    // Make sure the duration in SuccessScreen is consistent with the setTimeout here if you want precise control,
-    // or let SuccessScreen handle its own timeout for closing and then call signOut in its onClose.
     setTimeout(() => {
-      signOut({ callbackUrl: "/login" }); // Redirects to login page after the success message is shown
-    }, 2000); // This should ideally match the duration prop of SuccessScreen
+      signOut({ callbackUrl: "/login" });
+    }, 2000);
   };
 
   useEffect(() => {
@@ -79,19 +76,18 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      
       {showLogoutSuccess && (
         <SuccessScreen
           title="Logged Out"
           message="You have successfully logged out."
-          duration={2500} 
+          duration={2000}
           onClose={() => setShowLogoutSuccess(false)}
           showActionButton={false}
         />
       )}
 
       <nav className="bg-[#3f5341] p-3 flex items-center justify-between rounded-full max-w-6xl mx-auto mt-4 shadow-lg relative z-50">
-        {/* Left Section (Logo + Links) */}
+        {/* Left Section */}
         <div className="flex items-center space-x-6">
           <div className="bg-lime-400 rounded-full p-2 flex items-center justify-center h-12 w-20 ml-1">
             <span className="text-[#2a452d] font-extrabold text-2xl">KGN</span>
@@ -136,9 +132,14 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Section (User / Login) */}
+        {/* Right Section */}
         <div className="flex items-center space-x-3 mr-2">
-          {isLoggedIn ? (
+          {status === "loading" ? (
+            <div className="text-white flex items-center space-x-2 px-4 py-2.5">
+              <ImSpinner2 className="animate-spin text-lime-300 text-lg" />
+              <span className="hidden md:inline text-sm">Checking...</span>
+            </div>
+          ) : isLoggedIn ? (
             <>
               {isCEO && (
                 <Link

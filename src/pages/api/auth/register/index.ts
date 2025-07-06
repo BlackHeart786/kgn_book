@@ -16,7 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Check if email or username is already in use
     const existingUser = await prisma.users.findFirst({
       where: {
         OR: [{ email }, { username }],
@@ -37,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         username,
         email,
         password_hash,
-        is_active: true, // 👈 Optional: you can require email verification instead
+        is_active: true, 
       },
     });
 

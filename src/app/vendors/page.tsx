@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useSession, getSession } from "next-auth/react";
+import { useSession,  } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import AddVendorModal from "../components/AddVendor";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
@@ -103,8 +103,8 @@ useEffect(() => {
       const permissions = data?.permissions || [];
       const isCEO = data?.is_ceo;
 
-      const canViewPerm = permissions.includes("vendor view") || isCEO;
-      const canEditPerm = permissions.includes("vendor edit") || isCEO;
+      const canViewPerm = permissions.includes("vendor_view") || isCEO;
+      const canEditPerm = permissions.includes("vendor_edit") || isCEO;
 
       if (!canViewPerm) {
         router.push("/unauthorized");

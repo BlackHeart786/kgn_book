@@ -1,9 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
 import prisma from '../../../lib/dbConnect';
+import { checkPermission } from '../../../lib/permissions';
 
-// Helper: Serialize BigInt and Prisma.Decimal
+// Helper: BigInt and Prisma.Decimal serializer
 function replacer(_key: string, value: unknown): unknown {
   if (typeof value === 'bigint') return value.toString();
   if (
@@ -17,61 +16,9 @@ function replacer(_key: string, value: unknown): unknown {
   return value;
 }
 
-// Fetch latest permissions from DB
-async function getUserPermissions(email: string): Promise<string[]> {
-  const dbUser = await prisma.users.findUnique({
-    where: { email },
-    include: {
-      user_roles_user_roles_user_idTousers: {
-        include: {
-          roles: {
-            include: {
-              role_permissions: {
-                include: { permissions: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!dbUser) return [];
-
-  return dbUser.user_roles_user_roles_user_idTousers.flatMap((ur) =>
-    ur.roles.role_permissions.map((rp) => rp.permissions.permission_name)
-  );
-}
-
-// Permission check helper (with fresh fetch + CEO bypass)
-async function checkPermission(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  requiredPermission: string
-): Promise<boolean> {
-  const session = await getServerSession(req, res, authOptions);
-
-  if (!session || !session.user?.email) {
-    res.status(401).json({ error: "Unauthorized. Please sign in." });
-    return false;
-  }
-
-  if (session.user.is_ceo) return true;
-
-  const freshPermissions = await getUserPermissions(session.user.email);
-  const hasPermission = freshPermissions.includes(requiredPermission);
-
-  if (!hasPermission) {
-    res.status(403).json({ error: `Access denied. Missing permission: ${requiredPermission}` });
-    return false;
-  }
-
-  return true;
-}
-
 // GET /api/vendors
 async function handleGetVendors(req: NextApiRequest, res: NextApiResponse) {
-  const allowed = await checkPermission(req, res, "vendor view");
+  const { allowed } = await checkPermission(req, res, 'vendor_view');
   if (!allowed) return;
 
   const { id, name } = req.query;
@@ -82,12 +29,15 @@ async function handleGetVendors(req: NextApiRequest, res: NextApiResponse) {
     if (id) {
       const vendorId = parseInt(id as string);
       if (isNaN(vendorId)) {
-        return res.status(400).json({ error: 'Invalid ID parameter.' });
+        return res.status(400).json({ error: 'Invalid vendor ID.' });
       }
-      result = await prisma.vendors.findUnique({ where: { vendor_id: vendorId } });
+
+      result = await prisma.vendors.findUnique({
+        where: { vendor_id: vendorId },
+      });
 
       if (!result) {
-        return res.status(404).json({ error: `Vendor with ID "${vendorId}" not found.` });
+        return res.status(404).json({ error: `Vendor with ID ${vendorId} not found.` });
       }
     } else if (name) {
       result = await prisma.vendors.findMany({
@@ -97,7 +47,7 @@ async function handleGetVendors(req: NextApiRequest, res: NextApiResponse) {
         orderBy: { created_at: 'desc' },
       });
 
-      if (!result || result.length === 0) {
+      if (result.length === 0) {
         return res.status(404).json({ error: `No vendors found matching "${name}".` });
       }
     } else {
@@ -106,14 +56,14 @@ async function handleGetVendors(req: NextApiRequest, res: NextApiResponse) {
 
     res.status(200).json(JSON.parse(JSON.stringify(result, replacer)));
   } catch (error: any) {
-    console.error("Error in GET /vendors:", error);
+    console.error('Error in GET /vendors:', error);
     res.status(500).json({ error: 'Failed to fetch vendors.', details: error.message });
   }
 }
 
 // POST /api/vendors
 async function handlePostVendor(req: NextApiRequest, res: NextApiResponse) {
-  const allowed = await checkPermission(req, res, "vendor edit");
+  const { allowed } = await checkPermission(req, res, 'vendor_edit');
   if (!allowed) return;
 
   const {
@@ -156,14 +106,17 @@ async function handlePostVendor(req: NextApiRequest, res: NextApiResponse) {
     res.status(201).json(JSON.parse(JSON.stringify(newVendor, replacer)));
   } catch (error: any) {
     if (error.code === 'P2002') {
-      return res.status(409).json({ error: 'Vendor with this name or email already exists.' });
+      return res.status(409).json({
+        error: 'Vendor with this name or email already exists.',
+      });
     }
-    console.error("Error in POST /vendors:", error);
+
+    console.error('Error in POST /vendors:', error);
     res.status(500).json({ error: 'Failed to create vendor.', details: error.message });
   }
 }
 
-// Main handler
+// Main API handler
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   switch (req.method) {
     case 'GET':
@@ -174,6 +127,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     default:
       res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${req.method} Not Allowed`);
+      res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 }

@@ -7,7 +7,7 @@ import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { MdPersonAdd } from "react-icons/md";
 import { ImSpinner2 } from "react-icons/im";
 import Link from "next/link";
-
+import SuccessScreen from '../SuccessScreen'; 
 const RegisterPage = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -18,6 +18,8 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -45,7 +47,12 @@ const RegisterPage = () => {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ full_name: fullName, username, email, password }),
+        body: JSON.stringify({
+          full_name: fullName,
+          username,
+          email,
+          password,
+        }),
       });
 
       const data = await res.json();
@@ -54,14 +61,16 @@ const RegisterPage = () => {
         throw new Error(data.message || "Registration failed.");
       }
 
-      // Optional: auto-login after successful registration
-      await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      });
-
-      router.push("/"); 
+      // auto-login after successful registration
+      // await signIn("credentials", {
+      //   redirect: false,
+      //   email,
+      //   password,
+      // });
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push("/Login");
+      }, 2500);
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || "An unexpected error occurred.");
@@ -84,6 +93,17 @@ const RegisterPage = () => {
   if (session) return null;
 
   return (
+     <>
+    {showSuccess && (
+  <SuccessScreen
+    title="Account Created!"
+    message="You have successfully created an account and are now logged in."
+    duration={2500}
+    onClose={() => setShowSuccess(false)}
+    showActionButton={false}
+  />
+)}
+
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1F2023] to-black p-4">
       <div className="bg-[#2D2E30] text-white p-8 rounded-lg w-full max-w-md shadow-2xl border border-gray-700">
         <div className="text-center mb-6">
@@ -91,10 +111,34 @@ const RegisterPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <InputField label="Full Name" icon={<FaUser />} value={fullName} onChange={setFullName} placeholder="your example name" />
-          <InputField label="Username" icon={<FaUser />} value={username} onChange={setUsername} placeholder="example123" />
-          <InputField label="Email" icon={<FaEnvelope />} value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
-          <PasswordField value={password} onChange={setPassword} showPassword={showPassword} toggle={togglePasswordVisibility} />
+          <InputField
+            label="Full Name"
+            icon={<FaUser />}
+            value={fullName}
+            onChange={setFullName}
+            placeholder="your example name"
+          />
+          <InputField
+            label="Username"
+            icon={<FaUser />}
+            value={username}
+            onChange={setUsername}
+            placeholder="example123"
+          />
+          <InputField
+            label="Email"
+            icon={<FaEnvelope />}
+            value={email}
+            onChange={setEmail}
+            placeholder="you@example.com"
+            type="email"
+          />
+          <PasswordField
+            value={password}
+            onChange={setPassword}
+            showPassword={showPassword}
+            toggle={togglePasswordVisibility}
+          />
 
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-400 p-2 rounded text-sm text-center">
@@ -106,7 +150,9 @@ const RegisterPage = () => {
             type="submit"
             disabled={formSubmitting}
             className={`w-full py-2 px-4 flex items-center justify-center rounded-md text-lg font-semibold transition transform hover:scale-[1.02] ${
-              formSubmitting ? "bg-lime-800 cursor-not-allowed" : "bg-lime-600 hover:bg-lime-700"
+              formSubmitting
+                ? "bg-lime-800 cursor-not-allowed"
+                : "bg-lime-600 hover:bg-lime-700"
             }`}
           >
             {formSubmitting ? (
@@ -126,12 +172,16 @@ const RegisterPage = () => {
         <div className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{" "}
           <Link href="/login">
-            <span className="text-blue-400 hover:underline hover:text-blue-300">Login</span>
+            <span className="text-blue-400 hover:underline hover:text-blue-300">
+              Login
+            </span>
           </Link>
         </div>
       </div>
     </div>
+    </>
   );
+  
 };
 
 export default RegisterPage;
@@ -154,7 +204,9 @@ const InputField = ({
   <div>
     <label className="text-sm text-gray-300 block mb-1">{label}</label>
     <div className="relative">
-      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">{icon}</div>
+      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        {icon}
+      </div>
       <input
         type={type}
         value={value}
@@ -165,6 +217,7 @@ const InputField = ({
       />
     </div>
   </div>
+  
 );
 
 const PasswordField = ({
@@ -199,4 +252,6 @@ const PasswordField = ({
       </button>
     </div>
   </div>
+
 );
+

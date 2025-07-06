@@ -50,10 +50,11 @@ const ProfilePage = () => {
           <User size={32} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-emerald-300">
-            Welcome, {user.name}
-          </h1>
-        </div>
+        <h1 className="text-3xl font-bold">
+          <span className="text-emerald-300">Welcome, </span>
+          <span className="text-lime-300">{user.name}</span>
+        </h1>
+      </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">

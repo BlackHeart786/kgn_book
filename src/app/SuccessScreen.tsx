@@ -8,7 +8,7 @@ interface SuccessScreenProps {
   title?: string;
   message: string;
   onClose?: () => void;
-  duration?: number; // auto-close after ms
+  duration?: number; 
   showCloseButton?: boolean;
   showActionButton?: boolean;
   actionText?: string;
