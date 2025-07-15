@@ -13,7 +13,7 @@ import {
 } from "react-icons/md";
 import { ImSpinner2 } from "react-icons/im";
 import { IconType } from "react-icons";
-import SuccessScreen from "../SuccessScreen"; // Ensure this is the correct path
+import SuccessScreen from "../SuccessScreen"; 
 
 interface NavLink {
   name: string;

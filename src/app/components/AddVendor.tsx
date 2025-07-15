@@ -3,14 +3,14 @@
 
 import React, { useState } from 'react';
 
-// Define the interface for the form data that will be passed to onSave
+
 export interface AddVendorFormData {
-  vendorDisplayName: string; // This will map to vendor_name (required)
-  firstName?: string;       // Optional, if you collect first/last name separately
-  lastName?: string;        // Optional, if you collect first/last name separately
-  companyName?: string;     // Optional, if vendorDisplayName is derived from it
-  vendorEmail: string;      // Maps to email (required)
-  phone_no?: string;        // Maps to phone (string on frontend)
+  vendorDisplayName: string; 
+  firstName?: string;       
+  lastName?: string;        
+  companyName?: string;   
+  vendorEmail: string;      
+  phone_no?: string;        
   gst_no?: string;
   vendor_type?: string;
   address?: string;
@@ -32,7 +32,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({ onClose, onSave }) => {
   const [vendorDisplayName, setVendorDisplayName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [companyName, setCompanyName] = useState(''); // Added based on previous code
+  const [companyName, setCompanyName] = useState(''); 
   const [vendorEmail, setVendorEmail] = useState('');
   const [phone_no, setPhone_no] = useState('');
   const [gst_no, setGst_no] = useState('');
@@ -41,7 +41,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({ onClose, onSave }) => {
   const [bank_name, setBank_name] = useState('');
   const [bank_account_number, setBank_account_number] = useState('');
   const [ifsc_code, setIfsc_code] = useState('');
-  const [payables, setPayables] = useState<string>(''); // Keep as string for input, convert to number on save
+  const [payables, setPayables] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
