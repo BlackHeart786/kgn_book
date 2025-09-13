@@ -12,6 +12,7 @@ import {
   MdUploadFile,
   MdConstruction,
   MdWork,
+  MdBusiness ,
 } from 'react-icons/md';
 import { IconType } from 'react-icons';
 
@@ -72,6 +73,14 @@ const HomePage: React.FC = () => {
   icon: MdWork,
   iconColor: 'text-pink-400'
 },
+
+{
+  title: 'Company Details',
+  description: 'Create and manage company details',
+  href: '/company_details',
+  icon: MdBusiness,
+  iconColor: 'text-blue-400'
+}
 
   ];
 

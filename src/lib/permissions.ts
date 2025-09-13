@@ -33,12 +33,11 @@ export async function checkPermission(
   req: NextApiRequest,
   res: NextApiResponse,
   requiredPermission: string
-): Promise<{ allowed: boolean; session?: any }> {
+): Promise<{ allowed: boolean; session?: any; reason?: "unauthenticated" | "forbidden" }> {
   const session = await getServerSession(req, res, authOptions);
 
   if (!session || !session.user?.email) {
-    res.status(401).json({ error: 'Unauthorized. Please sign in.' });
-    return { allowed: false };
+    return { allowed: false, reason: "unauthenticated" };
   }
 
   if (session.user.is_ceo) return { allowed: true, session };
@@ -47,11 +46,9 @@ export async function checkPermission(
   const hasPermission = freshPermissions.includes(requiredPermission);
 
   if (!hasPermission) {
-    res.status(403).json({
-      error: `Access denied. Missing permission: ${requiredPermission}`,
-    });
-    return { allowed: false };
+    return { allowed: false, reason: "forbidden" };
   }
 
   return { allowed: true, session };
 }
+

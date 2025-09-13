@@ -19,7 +19,7 @@ model financial_transactions {
   reference_number   String?   @db.VarChar(50)
   created_by         Int?
   created_at         DateTime  @default(now()) @db.Timestamp(6)
-  updated_at         DateTime  @default(now()) @db.Timestamp(6)
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamp(6)
   vendor_id          Int?
   type               String    @default("spend") @db.VarChar(20)
   vendor             vendors?  @relation(fields: [vendor_id], references: [vendor_id])
@@ -33,16 +33,29 @@ model permissions {
 }
 
 model projects {
-  project_id   Int       @id @default(autoincrement())
-  project_name String?   @db.VarChar(100)
-  description  String?
-  start_date   DateTime? @db.Date
-  end_date     DateTime? @db.Date
-  budget       Decimal?  @db.Decimal(15, 2)
-  status       String?   @db.VarChar(20)
-  created_by   Int?
-  created_at   DateTime  @default(now()) @db.Timestamp(6)
-  updated_at   DateTime  @default(now()) @db.Timestamp(6)
+  id             BigInt           @id @default(autoincrement())
+  name           String
+  site           String
+  client         String?
+  status         project_status   @default(Planned)
+  phase          project_phase    @default(Pre_construction)
+  start_date     DateTime         @db.Date
+  end_date       DateTime         @db.Date
+  progress       Int              @default(0)
+  budget_total   Decimal          @default(0) @db.Decimal(14, 2)
+  budget_used    Decimal          @default(0) @db.Decimal(14, 2)
+  notes          String?
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime         @default(now()) @db.Timestamptz(6)
+  version        Int              @default(0)
+  project_events project_events[]
+
+  @@index([name(ops: raw("gin_trgm_ops"))], map: "idx_projects_name_trgm", type: Gin)
+  @@index([notes(ops: raw("gin_trgm_ops"))], map: "idx_projects_notes_trgm", type: Gin)
+  @@index([phase], map: "idx_projects_phase")
+  @@index([site(ops: raw("gin_trgm_ops"))], map: "idx_projects_site_trgm", type: Gin)
+  @@index([status], map: "idx_projects_status")
+  @@index([updated_at(sort: Desc)], map: "idx_projects_updated")
 }
 
 model role_permissions {
@@ -72,17 +85,18 @@ model user_roles {
 }
 
 model users {
-  user_id                              Int          @id @default(autoincrement())
-  username                             String       @unique @db.VarChar(50)
-  password_hash                        String       @db.VarChar(255)
-  email                                String       @unique @db.VarChar(100)
-  full_name                            String       @db.VarChar(100)
-  is_active                            Boolean?     @default(false)
-  is_ceo                               Boolean?     @default(false)
-  last_login                           DateTime?    @db.Timestamp(6)
-  created_at                           DateTime     @default(now()) @db.Timestamp(6)
-  updated_at                           DateTime     @default(now()) @db.Timestamp(6)
-  user_roles_user_roles_user_idTousers user_roles[] @relation("user_roles_user_idTousers")
+  user_id                              Int              @id @default(autoincrement())
+  username                             String           @unique @db.VarChar(50)
+  password_hash                        String           @db.VarChar(255)
+  email                                String           @unique @db.VarChar(100)
+  full_name                            String           @db.VarChar(100)
+  is_active                            Boolean?         @default(false)
+  is_ceo                               Boolean?         @default(false)
+  last_login                           DateTime?        @db.Timestamp(6)
+  created_at                           DateTime         @default(now()) @db.Timestamp(6)
+  updated_at                           DateTime         @default(now()) @db.Timestamp(6)
+  project_events                       project_events[]
+  user_roles_user_roles_user_idTousers user_roles[]     @relation("user_roles_user_idTousers")
 }
 
 model vendors {
@@ -102,4 +116,127 @@ model vendors {
   updated_at             DateTime                 @default(now()) @db.Timestamp(6)
   payables               Decimal?                 @db.Decimal(15, 2)
   financial_transactions financial_transactions[]
+  purchase_orders        purchase_orders[]
+}
+
+model company_details {
+  id                  Int       @id @default(autoincrement())
+  company_name        String    @db.VarChar(255)
+  address             String?
+  city                String?   @db.VarChar(100)
+  state               String?   @db.VarChar(100)
+  pin_code            String?   @db.VarChar(50)
+  country             String?   @db.VarChar(100)
+  phone               String?   @db.VarChar(50)
+  email               String?   @db.VarChar(255)
+  gst_no              String?   @db.VarChar(100)
+  registration_number String?   @db.VarChar(100)
+  logo                Bytes?
+  is_own_company      Boolean?  @default(false)
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model invoice_items {
+  id           Int       @id @default(autoincrement())
+  invoice_id   Int?
+  product_name String    @db.VarChar(255)
+  description  String?
+  quantity     Decimal   @default(1) @db.Decimal(10, 2)
+  rate         Decimal   @default(0) @db.Decimal(10, 2)
+  amount       Decimal?  @default(0) @db.Decimal(10, 2)
+  total_amount Decimal?  @default(0) @db.Decimal(10, 2)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  invoices     invoices? @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model invoices {
+  id               Int             @id @default(autoincrement())
+  customer_id      Int             @default(autoincrement())
+  customer_name    String          @db.VarChar(255)
+  customer_address String?
+  invoice_number   String          @unique @db.VarChar(100)
+  invoice_date     DateTime        @db.Date
+  due_date         DateTime        @db.Date
+  payment_terms    String?         @default("Net 30") @db.VarChar(50)
+  status           String?         @default("draft") @db.VarChar(20)
+  memo             String?
+  discount         Decimal?        @default(0) @db.Decimal(10, 2)
+  shipping_cost    Decimal?        @default(0) @db.Decimal(10, 2)
+  subtotal         Decimal?        @default(0) @db.Decimal(10, 2)
+  total_amount     Decimal?        @default(0) @db.Decimal(10, 2)
+  currency         String?         @default("INR") @db.VarChar(3)
+  created_at       DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?       @default(now()) @db.Timestamp(6)
+  invoice_items    invoice_items[]
+}
+
+model purchase_order_items {
+  id                Int              @id @default(autoincrement())
+  purchase_order_id Int?
+  product_name      String           @db.VarChar(255)
+  description       String?
+  quantity          Decimal?         @default(1) @db.Decimal(10, 2)
+  rate              Decimal?         @default(0) @db.Decimal(10, 2)
+  tax_rate          Decimal?         @default(0) @db.Decimal(5, 2)
+  amount            Decimal?         @default(0) @db.Decimal(10, 2)
+  total_amount      Decimal?         @default(0) @db.Decimal(10, 2)
+  created_at        DateTime?        @default(now()) @db.Timestamp(6)
+  purchase_orders   purchase_orders? @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_poi_po")
+
+  @@index([purchase_order_id], map: "idx_poi_po_id")
+}
+
+model purchase_orders {
+  id                   Int                    @id @default(autoincrement())
+  vendor_id            Int
+  po_number            String                 @unique @db.VarChar(100)
+  order_date           DateTime               @db.Date
+  expected_delivery    DateTime?              @db.Date
+  billing_address      String?
+  status               String?                @default("draft") @db.VarChar(20)
+  memo                 String?
+  discount             Decimal?               @default(0) @db.Decimal(10, 2)
+  shipping_cost        Decimal?               @default(0) @db.Decimal(10, 2)
+  subtotal             Decimal?               @default(0) @db.Decimal(10, 2)
+  total_amount         Decimal?               @default(0) @db.Decimal(10, 2)
+  currency             String?                @default("INR") @db.VarChar(3)
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
+  purchase_order_items purchase_order_items[]
+  vendors              vendors                @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_po_vendor")
+
+  @@index([vendor_id], map: "idx_po_vendor_id")
+}
+
+model project_events {
+  id         BigInt   @id @default(autoincrement())
+  project_id BigInt
+  event_time DateTime @default(now()) @db.Timestamptz(6)
+  field      String
+  old_value  String?
+  new_value  String?
+  user_id    Int?
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users?   @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_project_events_project_id")
+  @@index([event_time(sort: Desc)], map: "idx_project_events_time")
+  @@index([user_id], map: "idx_project_events_user_id")
+}
+
+enum project_phase {
+  Pre_construction @map("Pre construction")
+  Excavation
+  Foundation
+  Structure
+  Finishing
+  Payment_Received @map("Payment Received")
+}
+
+enum project_status {
+  Planned
+  In_Progress @map("In Progress")
+  On_Hold     @map("On Hold")
+  Completed
 }

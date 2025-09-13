@@ -1,7 +1,10 @@
 "use client";
+
 import React, { useEffect, useState, useCallback } from "react";
-import { HiOutlinePlusCircle,  } from "react-icons/hi";
+import { useRouter } from "next/navigation";
+import { HiOutlinePlusCircle } from "react-icons/hi";
 import { useDebounce } from "../../lib/hooks/useDebounce";
+import AddTransaction, { NewTransactionFormData } from "../components/AddTransaction";
 
 interface Transaction {
   transaction_id: number;
@@ -13,6 +16,7 @@ interface Transaction {
 }
 
 const TransactionsPage = () => {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,6 +24,8 @@ const TransactionsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [keyword, setKeyword] = useState("");
   const [searchDate, setSearchDate] = useState("");
+  const [canAddTransaction, setCanAddTransaction] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const debouncedKeyword = useDebounce(keyword, 500);
   const debouncedDate = useDebounce(searchDate, 500);
@@ -48,6 +54,57 @@ const TransactionsPage = () => {
     },
     []
   );
+
+  const handleAddTransactionClick = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
+  const handleSaveNewTransaction = async (newTransactionData: NewTransactionFormData) => {
+    try {
+      const response = await fetch("/api/transactions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTransactionData),
+      });
+      if (response.status !== 201) throw new Error("Failed to save transaction");
+      await fetchTransactions();
+      setIsModalOpen(false);
+    } catch (err: any) {
+      alert(err.message || "Error saving transaction.");
+    }
+  };
+
+  useEffect(() => {
+    const fetchFreshPermissions = async () => {
+      try {
+        const res = await fetch("/api/freshPermissions");
+        const data = await res.json();
+
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+
+        const permissions = data?.permissions || [];
+        const isCEO = data?.is_ceo;
+
+        const canViewPerm = permissions.includes("financial_view") || isCEO;
+        const canAddPerm = permissions.includes("financial_edit") || isCEO;
+
+        if (!canViewPerm) {
+          router.push("/unauthorized");
+          return;
+        }
+
+        setCanAddTransaction(canAddPerm);
+        fetchTransactions();
+      } catch (e) {
+        console.error("Error fetching fresh permissions:", e);
+        setError("Failed to load permissions.");
+      }
+    };
+
+    fetchFreshPermissions();
+  }, [fetchTransactions, router]);
 
   useEffect(() => {
     fetchTransactions(currentPage, debouncedKeyword, debouncedDate);
@@ -78,11 +135,14 @@ const TransactionsPage = () => {
           onChange={(e) => setSearchDate(e.target.value)}
           className="bg-[#2D2E30] text-sm text-white px-3 py-2 rounded-md border border-gray-600"
         />
-        <button
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-sm px-3 py-2 rounded-md ml-auto"
-        >
-          <HiOutlinePlusCircle className="text-lg" /> Add Transaction
-        </button>
+        {canAddTransaction && (
+          <button
+            onClick={handleAddTransactionClick}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-sm px-3 py-2 rounded-md ml-auto"
+          >
+            <HiOutlinePlusCircle className="text-lg" /> Add Transaction
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -100,11 +160,7 @@ const TransactionsPage = () => {
         </div>
         <div className="bg-[#2D2E30] rounded-xl p-4 text-center shadow-md">
           <p className="text-gray-400 text-xs font-medium">Net Balance</p>
-          <p
-            className={`text-2xl font-bold mt-1 ${
-              netBalance >= 0 ? "text-blue-400" : "text-red-400"
-            }`}
-          >
+          <p className={`text-2xl font-bold mt-1 ${netBalance >= 0 ? "text-blue-400" : "text-red-400"}`}>
             ₹{netBalance.toLocaleString("en-IN")}
           </p>
         </div>
@@ -134,22 +190,20 @@ const TransactionsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {spendTransactions.length > 0 ? (
-                    spendTransactions.map((t) => (
-                      <tr key={t.transaction_id} className="hover:bg-[#3A3B3C]">
-                        <td className="p-3">{new Date(t.transaction_date).toLocaleDateString("en-IN")}</td>
-                        <td className="p-3">{t.description}</td>
-                        <td className="p-3">{t.category}</td>
-                        <td className="p-3 text-right text-red-400">
-                          ₹{Number(t.amount).toLocaleString("en-IN")}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="p-5 text-center text-gray-500 text-xs">No spend transactions.</td>
+                  {spendTransactions.map((t) => (
+                    <tr
+                      key={t.transaction_id}
+                      className="hover:bg-[#3A3B3C] cursor-pointer"
+                      onClick={() => router.push(`/transactions/${t.transaction_id}`)}
+                    >
+                      <td className="p-3">{new Date(t.transaction_date).toLocaleDateString("en-IN")}</td>
+                      <td className="p-3">{t.description}</td>
+                      <td className="p-3">{t.category}</td>
+                      <td className="p-3 text-right text-red-400">
+                        ₹{Number(t.amount).toLocaleString("en-IN")}
+                      </td>
                     </tr>
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -168,22 +222,20 @@ const TransactionsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {incomeTransactions.length > 0 ? (
-                    incomeTransactions.map((t) => (
-                      <tr key={t.transaction_id} className="hover:bg-[#3A3B3C]">
-                        <td className="p-3">{new Date(t.transaction_date).toLocaleDateString("en-IN")}</td>
-                        <td className="p-3">{t.description}</td>
-                        <td className="p-3">{t.category}</td>
-                        <td className="p-3 text-right text-green-400">
-                          ₹{Number(t.amount).toLocaleString("en-IN")}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="p-5 text-center text-gray-500 text-xs">No income transactions.</td>
+                  {incomeTransactions.map((t) => (
+                    <tr
+                      key={t.transaction_id}
+                      className="hover:bg-[#3A3B3C] cursor-pointer"
+                      onClick={() => router.push(`/transactions/${t.transaction_id}`)}
+                    >
+                      <td className="p-3">{new Date(t.transaction_date).toLocaleDateString("en-IN")}</td>
+                      <td className="p-3">{t.description}</td>
+                      <td className="p-3">{t.category}</td>
+                      <td className="p-3 text-right text-green-400">
+                        ₹{Number(t.amount).toLocaleString("en-IN")}
+                      </td>
                     </tr>
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -208,6 +260,13 @@ const TransactionsPage = () => {
           Next
         </button>
       </div>
+
+      {isModalOpen && (
+        <AddTransaction
+          onClose={handleCloseModal}
+          onSave={handleSaveNewTransaction}
+        />
+      )}
     </div>
   );
 };

@@ -95,7 +95,7 @@ const AddTransaction: React.FC<AddTransactionProps> = ({ onClose, onSave }) => {
             <div className="flex space-x-2">
               <button
                 type="submit"
-                className="bg-[#007BFF] hover:bg-[#0056b3] text-white py-2 px-4 rounded-md flex items-center space-x-2"
+                className="bg-green-600 hover:bg-green-700  text-white py-2 px-4 rounded-md flex items-center space-x-2"
               >
                 <MdCheck />
                 <span>Save</span>
